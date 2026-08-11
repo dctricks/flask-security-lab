@@ -1,4 +1,6 @@
-Flask Security Lab
+# Flask Security Lab
+
+![Security Tests](https://github.com/dctricks/flask-security-lab/actions/workflows/tests.yml/badge.svg)
 
 A Python and Flask security-learning project focused on secure command execution, input validation, TCP port scanning, and HTTP service detection in a controlled local environment.
 
