@@ -76,5 +76,124 @@ class ScannerTests(unittest.TestCase):
             self.assertIsNone(reason)
 
 
+    @patch("scanner.scan_port")
+    @patch("scanner.detect_http")
+    @patch("scanner.get_service")
+    def test_scan_ports_reports_http_service(
+        self, mock_get_service, mock_detect_http, mock_scan_port
+    ):
+        mock_scan_port.side_effect = [True, False]
+        mock_detect_http.return_value = (200, "OK")
+
+        scanner.scan_ports("127.0.0.1", 5000, 5001)
+
+        mock_get_service.assert_not_called()
+
+    @patch("scanner.scan_port")
+    @patch("scanner.detect_http")
+    @patch("scanner.get_service")
+    def test_scan_ports_reports_non_http_service(
+        self, mock_get_service, mock_detect_http, mock_scan_port
+    ):
+        mock_scan_port.return_value = True
+        mock_detect_http.return_value = (None, None)
+        mock_get_service.return_value = "SSH"
+
+        scanner.scan_ports("127.0.0.1", 22, 22)
+
+        mock_get_service.assert_called_once_with(22)
+
+    @patch("scanner.scan_ports")
+    @patch("scanner.validate_target")
+    def test_main_accepts_valid_arguments(
+        self, mock_validate_target, mock_scan_ports
+    ):
+        with patch("scanner.sys.argv", [
+            "scanner.py",
+            "127.0.0.1",
+            "5000",
+            "5005",
+        ]):
+            scanner.main()
+
+        mock_validate_target.assert_called_once_with("127.0.0.1")
+        mock_scan_ports.assert_called_once_with(
+            "127.0.0.1", 5000, 5005
+        )
+
+    def test_main_help(self):
+        with patch("scanner.sys.argv", ["scanner.py", "--help"]):
+            with self.assertRaises(SystemExit) as context:
+                scanner.main()
+
+        self.assertEqual(context.exception.code, 0)
+
+    def test_main_rejects_wrong_argument_count(self):
+        with patch("scanner.sys.argv", ["scanner.py"]):
+            with self.assertRaises(SystemExit) as context:
+                scanner.main()
+
+        self.assertEqual(context.exception.code, 1)
+
+    def test_main_rejects_invalid_target(self):
+        with patch("scanner.sys.argv", [
+            "scanner.py",
+            "not-a-real-target",
+            "1",
+            "10",
+        ]), patch("scanner.validate_target", return_value=False):
+            with self.assertRaises(SystemExit) as context:
+                scanner.main()
+
+        self.assertEqual(context.exception.code, 1)
+
+    def test_main_rejects_non_numeric_ports(self):
+        with patch("scanner.sys.argv", [
+            "scanner.py",
+            "127.0.0.1",
+            "abc",
+            "10",
+        ]), patch("scanner.validate_target", return_value=True):
+            with self.assertRaises(SystemExit) as context:
+                scanner.main()
+
+        self.assertEqual(context.exception.code, 1)
+
+    def test_main_rejects_invalid_start_port(self):
+        with patch("scanner.sys.argv", [
+            "scanner.py",
+            "127.0.0.1",
+            "0",
+            "10",
+        ]), patch("scanner.validate_target", return_value=True):
+            with self.assertRaises(SystemExit) as context:
+                scanner.main()
+
+        self.assertEqual(context.exception.code, 1)
+
+    def test_main_rejects_invalid_end_port(self):
+        with patch("scanner.sys.argv", [
+            "scanner.py",
+            "127.0.0.1",
+            "1",
+            "65536",
+        ]), patch("scanner.validate_target", return_value=True):
+            with self.assertRaises(SystemExit) as context:
+                scanner.main()
+
+        self.assertEqual(context.exception.code, 1)
+
+    def test_main_rejects_reversed_port_range(self):
+        with patch("scanner.sys.argv", [
+            "scanner.py",
+            "127.0.0.1",
+            "5005",
+            "5000",
+        ]), patch("scanner.validate_target", return_value=True):
+            with self.assertRaises(SystemExit) as context:
+                scanner.main()
+
+        self.assertEqual(context.exception.code, 1)
+
 if __name__ == "__main__":
     unittest.main()
