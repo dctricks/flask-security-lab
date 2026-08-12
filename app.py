@@ -7,34 +7,34 @@ import re
 app = Flask(__name__)
 
 
-@app.route("/")
-def home():
-    return """
-    <h1>Flask Security Lab</h1>
-    <p>Secure command execution practice.</p>
-    """
+@app.after_request
+def add_security_headers(response):
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
+    if request.is_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    return response
 
 @app.route("/ping")
 def ping():
     host = request.args.get("host", "").strip()
 
-    # Reject missing input
     if not host:
         return jsonify({"error": "Missing host"}), 400
 
-    # Prevent excessively long input
     if len(host) > 253:
         return jsonify({"error": "Host is too long"}), 400
 
-    # Check whether the input is an IP address
     try:
         ipaddress.ip_address(host)
         valid_host = True
     except ValueError:
         valid_host = False
 
-    # Check normal DNS hostname syntax
     hostname_pattern = re.compile(
         r"^(?=.{1,253}$)"
         r"(?:[A-Za-z0-9]"
