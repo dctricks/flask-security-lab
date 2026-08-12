@@ -50,6 +50,12 @@ The application also validates the supplied host before executing the command.
 
 «This project is intended for defensive security education and authorized testing in controlled environments.»
 
+## 📸 Demo
+
+The scanner successfully detects the Flask application's open TCP port and identifies the HTTP service.
+
+![Flask Security Lab scanner demo](screenshots/scanner-demo.png)
+
 🧰 Technologies
 
 - Python 3
