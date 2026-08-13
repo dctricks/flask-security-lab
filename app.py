@@ -6,7 +6,6 @@ import re
 
 app = Flask(__name__)
 
-
 @app.after_request
 def add_security_headers(response):
     response.headers["Content-Security-Policy"] = "default-src 'self'"
@@ -15,9 +14,20 @@ def add_security_headers(response):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
     if request.is_secure:
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
 
     return response
+
+
+@app.route("/")
+def home():
+    return """
+    <h1>Flask Security Lab</h1>
+    <p>Secure command execution and web security practice.</p>
+    """
+
 
 @app.route("/ping")
 def ping():
